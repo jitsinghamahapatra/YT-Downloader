@@ -417,14 +417,35 @@
     canvas.height = window.innerHeight;
   });
 
-  // 🎥 YT Downloader Logic
+  // 🎥 YouTube Downloader Logic
   async function loadFormats() {
-    const url = document.getElementById('url').value;
+    const url = document.getElementById('url').value.trim();
     const status = document.getElementById('status');
     const select = document.getElementById('format');
 
-    if (!url.trim()) {
-      alert('Please paste a YouTube link!');
+    select.innerHTML = "";
+    status.textContent = "";
+    status.className = "";
+
+    // 🔎 Basic validation
+    if (!url) {
+      status.textContent = "⚠️ Please paste a YouTube video link!";
+      status.className = "error";
+      return;
+    }
+
+    // 🛑 Playlist check
+    if (url.includes("list=")) {
+      status.textContent = "⚠️ Playlist links are not supported. Please use a single video link.";
+      status.className = "error";
+      return;
+    }
+
+    // ✅ Check for valid YouTube URL
+    const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
+    if (!ytRegex.test(url)) {
+      status.textContent = "⚠️ Invalid or unsupported URL. Please enter a valid YouTube video link.";
+      status.className = "error";
       return;
     }
 
@@ -451,29 +472,29 @@
       status.className = "success";
     } catch (err) {
       console.error("Error loading formats:", err);
-      status.textContent = "⚠️ Error fetching formats!";
+      status.textContent = "⚠️ Error fetching formats! (Invalid or unsupported link)";
       status.className = "error";
     }
   }
 
   async function download() {
-    const url = document.getElementById('url').value;
+    const url = document.getElementById('url').value.trim();
     const format_id = document.getElementById('format').value;
     const status = document.getElementById('status');
 
-    if (!url.trim() || !format_id) {
-      alert('Paste link and select format!');
+    if (!url || !format_id) {
+      status.textContent = "⚠️ Paste link and select format!";
+      status.className = "error";
       return;
     }
 
     status.textContent = "Downloading... 0% ⏳";
     status.className = "";
-    
+
     try {
       const response = await fetch(`/api/download?url=${encodeURIComponent(url)}&format_id=${format_id}`);
       if (!response.ok) throw new Error("Download failed");
 
-      // Track progress
       const contentLength = response.headers.get('Content-Length');
       const reader = response.body.getReader();
       let received = 0;
@@ -491,7 +512,6 @@
         }
       }
 
-      // Combine chunks into a blob
       const blob = new Blob(chunks);
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -509,7 +529,7 @@
   }
 </script>
 
-
 </body>
+
 
 </html>
