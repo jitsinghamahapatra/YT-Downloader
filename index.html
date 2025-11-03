@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Downloader</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+  <link rel="icon" type="image/png" href="favicon.png">
+</head>
+
+<style>
+  
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #000000 0%, #000000 100%);
+      color: #fff;
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Background Canvas */
+    #bgCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      opacity: 0.6;
+    }
+
+
+    .logo {
+      font-size: 28px;
+      font-weight: 600;
+      color: #fff;
+      text-decoration: none;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      transition: transform 0.3s ease;
+    }
+
+    .logo:hover {
+      transform: scale(1.05);
+      color: #ffeb3b;
+    }
+
+    /* Main */
+    main {
+      flex-grow: 1;
+      text-align: center;
+      padding: 100px 20px 60px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    main h1 {
+      font-size: 48px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    main p {
+      font-size: 18px;
+      margin-bottom: 40px;
+      opacity: 0.95;
+    }
+
+
+    /* Search Box */
+    .search-box {
+      display: flex;
+      flex-direction: column;
+      /* stack elements vertically */
+      align-items: center;
+      gap: 15px;
+      max-width: 700px;
+      margin: 0 auto 40px;
+    }
+
+    /* Heading inside search box */
+    .search-box h2 {
+      font-size: 15px;
+      margin-bottom: 10px;
+      text-align: center;
+      width: 100%;
+    }
+
+    /* Input field */
+    #url {
+      width: 100%;
+      padding: 18px 24px;
+      border: none;
+      border-radius: 50px;
+      font-size: 16px;
+      outline: none;
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+      color: #fff;
+      transition: all 0.3s ease;
+    }
+
+    #url:focus {
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
+    }
+
+    /* Buttons & select container */
+    .search-box .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+    }
+
+    /* Individual buttons and select */
+    .search-box button,
+    .search-box select {
+      padding: 14px 24px;
+      font-size: 16px;
+      border-radius: 50px;
+      border: none;
+      cursor: pointer;
+    }
+
+    /* Download button specific gradient */
+    #downloadBtn {
+      background: linear-gradient(135deg, #c383c8 0%, #6539a1 100%);
+      color: #fff;
+    }
+
+    /* Loader spacing */
+    #loader {
+      margin-top: 20px;
+    }
+
+
+
+    #urlInput {
+      flex: 1;
+      padding: 18px 24px;
+      border: none;
+      border-radius: 50px;
+      font-size: 16px;
+      outline: none;
+      background: rgba(255, 255, 255, 0.05);
+      /* subtle background */
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+      /* low glow */
+      color: #fff;
+      transition: all 0.3s ease;
+    }
+
+    #urlInput:focus {
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
+      /* low focus glow */
+      transform: translateY(-1px);
+    }
+
+    #downloadBtn {
+      padding: 18px 40px;
+      background: linear-gradient(135deg, #c383c8 0%, #6539a1 100%);
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(58, 55, 55, 0.068);
+      /* reduced glow */
+      transition: all 0.3s ease;
+    }
+
+    #downloadBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 15px rgba(101, 89, 89, 0.214);
+      /* low hover glow */
+    }
+
+
+    /* Loader */
+    .loader {
+      display: none;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 30px;
+    }
+
+    .loader.active {
+      display: flex;
+    }
+
+    .loader div {
+      width: 15px;
+      height: 15px;
+      background: #fff;
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    .loader div:nth-child(1) {
+      animation-delay: -0.32s;
+    }
+
+    .loader div:nth-child(2) {
+      animation-delay: -0.16s;
+    }
+
+    @keyframes bounce {
+
+      0%,
+      80%,
+      100% {
+        transform: scale(0);
+        opacity: 0.5;
+      }
+
+      40% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* Info Sections */
+    section {
+      padding: 40px 20px;
+      margin: 30px auto;
+      max-width: 900px;
+      text-align: center;
+    }
+
+    section h2 {
+      font-size: 32px;
+      margin-bottom: 20px;
+      color: #ffeb3b;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    section p {
+      font-size: 16px;
+      line-height: 1.8;
+      opacity: 0.95;
+      text-align: center;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 30px 20px;
+      margin-top: 60px;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      main h1 {
+        font-size: 36px;
+      }
+
+      main p {
+        font-size: 16px;
+      }
+
+      .search-box {
+        flex-direction: column;
+      }
+
+      #downloadBtn {
+        width: 100%;
+      }
+
+      section {
+        padding: 30px 20px;
+        margin: 20px 10px;
+      }
+
+      section h2 {
+        font-size: 26px;
+      }
+    }
+
+</style>
+<body>
+  <canvas id="bgCanvas"></canvas>
+
+
+  <main>
+    <h1>Free YouTube Downloader</h1>
+    <p>Paste your YouTube link below and download in MP3 or MP4 instantly.</p>
+
+    <div class="search-box">
+      <h2>Load Format -> select format -> download</h2>
+      <input type="text" id="url" placeholder="Paste YouTube link here">
+      <div class="buttons">
+        <button id="loadBtn" onclick="loadFormats()">Load Formats</button>
+        <select id="format">
+          <option value="">Select format</option>
+        </select>
+        <button id="downloadBtn" onclick="download()">Download</button>
+      </div>
+      <p id="status"></p>
+    </div>
+
+
+
+    <div class="loader" id="loader">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+  </main>
+
+  <!-- Info Sections -->
+  <section>
+    <h2>About YTDownloader</h2>
+    <p>
+      YouTube is the biggest video-sharing platform in the world, offering users an excellent experience to upload,
+      view, and share videos.
+      However, it doesn’t allow direct video downloads. That’s where YTDownloader helps! You can download YouTube
+      videos, Shorts, and
+      music tracks for free — in resolutions up to 4K or even 8K. Convert videos to audio formats with one click and
+      enjoy seamless saving and sharing.
+    </p>
+  </section>
+
+  <section>
+    <h2>Features</h2>
+    <p><strong>Versatility in Format:</strong> Download videos as MP4, audio-only, or video-only for music production,
+      offline viewing, and editing.<br><br>
+      <strong>High Quality Options:</strong> Save videos in HD, 1080p, 4K, or 8K effortlessly.<br><br>
+      <strong>Absolutely Free:</strong> Enjoy unlimited downloads with zero cost or registration.<br><br>
+      <strong>Fast Downloads:</strong> Experience lightning-fast speed — most downloads complete within seconds.<br><br>
+      <strong>No Sign-up Required:</strong> We respect your privacy — no login or data storage needed.<br><br>
+      <strong>Cross-Platform Compatibility:</strong> Works seamlessly on Windows, Android, and macOS via any browser.
+    </p>
+  </section>
+
+  <section>
+    <h2>How to Download</h2>
+    <p>
+      1️⃣ Copy the YouTube video link you want to save.<br>
+      2️⃣ Paste it into the input box above.<br>
+      3️⃣ Click “Download” and wait for processing.<br>
+      4️⃣ Select your format and enjoy your video or music offline!
+    </p>
+  </section>
+
+
+  <footer>
+    © 2025 YTDownloader — Built by Jit Singha Mahapatra
+  </footer>
+
+<script>
+  // 🎆 Background Particle Animation
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  let particles = [];
+  for (let i = 0; i < 100; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 2 + 1,
+      dx: (Math.random() - 0.5) * 1.2,
+      dy: (Math.random() - 0.5) * 1.2
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let p of particles) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fill();
+      p.x += p.dx;
+      p.y += p.dy;
+      if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
+      if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
+    }
+
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        let dx = particles[i].x - particles[j].x;
+        let dy = particles[i].y - particles[j].y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(255,255,255,${0.2 * (1 - dist / 120)})`;
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+
+  // 🎥 YT Downloader Logic
+  async function loadFormats() {
+    const url = document.getElementById('url').value;
+    const status = document.getElementById('status');
+    const select = document.getElementById('format');
+
+    if (!url.trim()) {
+      alert('Please paste a YouTube link!');
+      return;
+    }
+
+    status.textContent = "Fetching formats... ⏳";
+    status.className = "";
+
+    try {
+      const res = await fetch(`/api/formats?url=${encodeURIComponent(url)}`);
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Failed to fetch formats.");
+      }
+
+      select.innerHTML = "";
+      data.formats.forEach(f => {
+        const option = document.createElement('option');
+        option.value = f.format_id;
+        option.text = `${f.resolution || 'audio-only'} ${f.ext} ${f.fps ? f.fps + 'fps' : ''}`;
+        select.appendChild(option);
+      });
+
+      status.textContent = `Formats loaded for "${data.title}" ✅`;
+      status.className = "success";
+    } catch (err) {
+      console.error("Error loading formats:", err);
+      status.textContent = "⚠️ Error fetching formats!";
+      status.className = "error";
+    }
+  }
+
+  async function download() {
+    const url = document.getElementById('url').value;
+    const format_id = document.getElementById('format').value;
+    const status = document.getElementById('status');
+
+    if (!url.trim() || !format_id) {
+      alert('Paste link and select format!');
+      return;
+    }
+
+    status.textContent = "Downloading... 0% ⏳";
+    status.className = "";
+    
+    try {
+      const response = await fetch(`/api/download?url=${encodeURIComponent(url)}&format_id=${format_id}`);
+      if (!response.ok) throw new Error("Download failed");
+
+      // Track progress
+      const contentLength = response.headers.get('Content-Length');
+      const reader = response.body.getReader();
+      let received = 0;
+      const chunks = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        received += value.length;
+
+        if (contentLength) {
+          const percent = Math.floor((received / contentLength) * 100);
+          status.textContent = `Downloading... ${percent}% ⏳`;
+        }
+      }
+
+      // Combine chunks into a blob
+      const blob = new Blob(chunks);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = format_id.includes("bestaudio") ? "audio.mp3" : "video.mp4";
+      a.click();
+
+      status.textContent = "✅ Download Complete!";
+      status.className = "success";
+
+    } catch (err) {
+      console.error("Error downloading:", err);
+      status.textContent = "⚠️ Error downloading video!";
+      status.className = "error";
+    }
+  }
+</script>
+
+
+</body>
+
+</html>
